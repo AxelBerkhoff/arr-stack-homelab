@@ -25,15 +25,20 @@ services:
       - NET_ADMIN
     restart: unless-stopped
     environment:
-      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_SERVICE_PROVIDER=nordvpn
       - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=QAtYgmaErP/USLyJheuof4jOLVDh1PbshLoVHyBlBEc=
+      - WIREGUARD_PRIVATE_KEY=gMlMHrZZm8+InM6DGNXRzUJrI6o0XAa4Y39G6gaWX0o=
       - WIREGUARD_ADDRESSES=192.168.1.16/32
       - SERVER_COUNTRIES=Netherlands
     ports:
-      - 8080:8080 # qbittorrent webui
-      - 6881:6881
-      - 6881:6881/udp
+      - 9696:9696 #prowlarr
+      - 7878:7878 #radarr
+      - 8989:8989 #sonarr
+      - 6767:6767 #bazarr
+      - 8686:8686 #lidarr
+      - 8080:8080 #qbittorrent
+      - 6881:6881 #qbittorrent
+      - 6881:6881/udp #qbittorrent
 
 ###############################################
 # RADARR

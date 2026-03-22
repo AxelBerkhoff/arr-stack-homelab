@@ -30,6 +30,7 @@ services:
       - WIREGUARD_PRIVATE_KEY=gMlMHrZZm8+InM6DGNXRzUJrI6o0XAa4Y39G6gaWX0o=
       - WIREGUARD_ADDRESSES=192.168.1.16/32
       - SERVER_COUNTRIES=Netherlands
+      - FIREWALL_VPN_INPUT_PORTS=8080,6881
     ports:
       - 9696:9696 #prowlarr
       - 7878:7878 #radarr

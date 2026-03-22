@@ -1,22 +1,42 @@
 ###############################################
-# Common Keys for all apps
+# Common Keys
 ###############################################
-
 x-common-keys: &common-keys
-    restart: unless-stopped
-    logging:
-      driver: json-file
-    environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Europe/London
-    dns:
-      - 1.1.1.1
-      - 1.0.0.1
+  restart: unless-stopped
+  logging:
+    driver: json-file
+  environment:
+    PUID: 1000
+    PGID: 1000
+    TZ: Europe/Amsterdam
+  dns:
+    - 192.168.1.17
+    - 1.1.1.1
 
 services:
+
 ###############################################
-# RADARR - Movies
+# VPN (Gluetun)
+###############################################
+  gluetun:
+    container_name: gluetun
+    image: qmcgaw/gluetun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=YOUR_PRIVATE_KEY
+      - WIREGUARD_ADDRESSES=192.168.1.16/32
+      - SERVER_COUNTRIES=Netherlands
+    ports:
+      - 8080:8080 # qbittorrent webui
+      - 6881:6881
+      - 6881:6881/udp
+
+###############################################
+# RADARR
 ###############################################
   radarr:
     <<: *common-keys
@@ -28,11 +48,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/radarr:/config
       - /data:/data
+    networks:
+      - arr_network
 
 ###############################################
-# SONARR - TV Shows
+# SONARR
 ###############################################
-
   sonarr:
     <<: *common-keys
     container_name: sonarr
@@ -43,11 +64,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/sonarr:/config
       - /data:/data
+    networks:
+      - arr_network
 
 ###############################################
-# LIDARR - Music
+# LIDARR
 ###############################################
-
   lidarr:
     <<: *common-keys
     container_name: lidarr
@@ -58,11 +80,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/lidarr:/config
       - /data:/data
+    networks:
+      - arr_network
 
 ###############################################
-# BAZARR - Subtitles
+# BAZARR
 ###############################################
-
   bazarr:
     <<: *common-keys
     container_name: bazarr
@@ -73,11 +96,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/bazarr:/config
       - /data/media:/data/media
+    networks:
+      - arr_network
 
 ###############################################
-# PROWLARR - Indexer Manager
+# PROWLARR
 ###############################################
-
   prowlarr:
     <<: *common-keys
     container_name: prowlarr
@@ -87,19 +111,19 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/prowlarr:/config
+    networks:
+      - arr_network
 
 ###############################################
-# QBITTORRENT - Downloader
+# QBITTORRENT (via VPN)
 ###############################################
-
   qbittorrent:
     <<: *common-keys
     container_name: qbittorrent
     image: ghcr.io/hotio/qbittorrent:latest
-    ports:
-      - 8080:8080
-      - 6881:6881
-      - 6881:6881/udp
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
     environment:
       - WEBUI_PORT=8080
       - TORRENTING_PORT=6881
@@ -109,152 +133,24 @@ services:
       - /data:/data
 
 ###############################################
-# JELLYFIN - Media Server
+# PLEX
 ###############################################
-
-###############################################
-# Common Keys for all apps
-###############################################
-
-x-common-keys: &common-keys
-    restart: unless-stopped
-    logging:
-      driver: json-file
-    environment:
-      PUID: 1000
-      PGID: 1000
-      TZ: Europe/London
-    dns:
-      - 1.1.1.1
-      - 1.0.0.1
-
-services:
-###############################################
-# RADARR - Movies
-###############################################
-  radarr:
-    <<: *common-keys
-    container_name: radarr
-    image: ghcr.io/hotio/radarr:latest
-    ports:
-      - 7878:7878
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/radarr:/config
-      - /data:/data
-
-###############################################
-# SONARR - TV Shows
-###############################################
-
-  sonarr:
-    <<: *common-keys
-    container_name: sonarr
-    image: ghcr.io/hotio/sonarr:latest
-    ports:
-      - 8989:8989
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/sonarr:/config
-      - /data:/data
-
-###############################################
-# LIDARR - Music
-###############################################
-
-  lidarr:
-    <<: *common-keys
-    container_name: lidarr
-    image: ghcr.io/hotio/lidarr:latest
-    ports:
-      - 8686:8686
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/lidarr:/config
-      - /data:/data
-
-###############################################
-# BAZARR - Subtitles
-###############################################
-
-  bazarr:
-    <<: *common-keys
-    container_name: bazarr
-    image: ghcr.io/hotio/bazarr:latest
-    ports:
-      - 6767:6767
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/bazarr:/config
-      - /data/media:/data/media
-
-###############################################
-# PROWLARR - Indexer Manager
-###############################################
-
-  prowlarr:
-    <<: *common-keys
-    container_name: prowlarr
-    image: ghcr.io/hotio/prowlarr:latest
-    ports:
-      - 9696:9696
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/prowlarr:/config
-
-###############################################
-# QBITTORRENT - Downloader
-###############################################
-
-  qbittorrent:
-    <<: *common-keys
-    container_name: qbittorrent
-    image: ghcr.io/hotio/qbittorrent:latest
-    ports:
-      - 8080:8080
-      - 6881:6881
-      - 6881:6881/udp
-    environment:
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/qbittorrent:/config
-      - /data:/data
-
-###############################################
-# JELLYFIN - Media Server
-###############################################
-
   plex:
     <<: *common-keys
-    container_name: jellyfin
+    container_name: plex
     image: ghcr.io/hotio/plex:latest
+    ports:
+      - 32400:32400
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/plex:/config
-      - /data/media:/data/media:ro #read-only
-    ports:
-      - 32400:32400
+      - /data/media:/data/media:ro
+    networks:
+      - arr_network
 
 ###############################################
-# ARR Stack Dedicated Network
+# NETWORK
 ###############################################
-
 networks:
-  default:
+  arr_network:
     name: arr_network
-
-###############################################
-###############################################
-
-###############################################
-# ARR Stack Dedicated Network
-###############################################
-
-networks:
-  default:
-    name: arr_network
-
-###############################################
-###############################################

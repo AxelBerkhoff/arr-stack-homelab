@@ -150,8 +150,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/plex:/config
       - /data/media:/data/media:ro
-    environment:
-      - PLEX_CLAIM=claim-yUemDTMfdXkcf7B3xJt
 
 ###############################################
 # NETWORK

@@ -10,8 +10,8 @@ x-common-keys: &common-keys
     PGID: 1000
     TZ: Europe/Amsterdam
   dns:
-    - 192.168.1.17
     - 1.1.1.1
+    - 1.0.0.1
 
 x-common-keys-vpn: &common-keys-vpn
   restart: unless-stopped

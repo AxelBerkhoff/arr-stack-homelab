@@ -13,35 +13,59 @@ x-common-keys: &common-keys
     - 192.168.1.17
     - 1.1.1.1
 
+x-common-keys-vpn: &common-keys-vpn
+  restart: unless-stopped
+  logging:
+    driver: json-file
+  environment:
+    PUID: 1000
+    PGID: 1000
+    TZ: Europe/Amsterdam
+
 services:
 
 ###############################################
 # VPN (Gluetun)
 ###############################################
-#  gluetun:
-#    container_name: gluetun
-#    image: qmcgaw/gluetun
-#    cap_add:
-#      - NET_ADMIN
-#    restart: unless-stopped
-#    environment:
-#      - VPN_SERVICE_PROVIDER=nordvpn
-#      - VPN_TYPE=wireguard
-#      - WIREGUARD_PRIVATE_KEY=gMlMHrZZm8+InM6DGNXRzUJrI6o0XAa4Y39G6gaWX0o=
-#      - WIREGUARD_ADDRESSES=10.0.0.0/32
-#      - SERVER_COUNTRIES=Netherlands
-#      - FIREWALL_VPN_INPUT_PORTS=8080,6881
-#      - FIREWALL_OUTBOUND_SUBNETS=0.0.0.0/0
-#
-#    ports:
-#      - 9696:9696 #prowlarr
-#      - 7878:7878 #radarr
-#      - 8989:8989 #sonarr
-#      - 6767:6767 #bazarr
-#      - 8686:8686 #lidarr
-#      - 8080:8080 #qbittorrent WebUI
-#      - 6881:6881 #qbittorrent torrent port
-#      - 6881:6881/udp
+  gluetun:
+    container_name: gluetun
+    image: qmcgaw/gluetun
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Amsterdam
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=openvpn
+      - OPENVPN_USER=${NORDVPN_USER}
+      - OPENVPN_PASSWORD=${NORDVPN_PASSWORD}
+      - SERVER_COUNTRIES=Netherlands
+      - FIREWALL_VPN_INPUT_PORTS=8080,6881
+    ports:
+      - 8080:8080   # qBittorrent WebUI
+      - 6881:6881   # qBittorrent torrent
+      - 6881:6881/udp
+
+###############################################
+# QBITTORRENT (via VPN)
+###############################################
+  qbittorrent:
+    <<: *common-keys-vpn
+    container_name: qbittorrent
+    image: ghcr.io/hotio/qbittorrent:latest
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Amsterdam
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 6881
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/qbittorrent:/config
+      - /data:/data
 
 ###############################################
 # RADARR
@@ -56,8 +80,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/radarr:/config
       - /data:/data
-    networks:
-      - arr_network
 
 ###############################################
 # SONARR
@@ -72,8 +94,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/sonarr:/config
       - /data:/data
-    networks:
-      - arr_network
 
 ###############################################
 # LIDARR
@@ -88,8 +108,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/lidarr:/config
       - /data:/data
-    networks:
-      - arr_network
 
 ###############################################
 # BAZARR
@@ -104,8 +122,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/bazarr:/config
       - /data/media:/data/media
-    networks:
-      - arr_network
 
 ###############################################
 # PROWLARR
@@ -119,25 +135,6 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/prowlarr:/config
-    networks:
-      - arr_network
-
-###############################################
-# QBITTORRENT (via VPN)
-###############################################
-  qbittorrent:
-    <<: *common-keys
-    container_name: qbittorrent
-    image: ghcr.io/hotio/qbittorrent:latest
-    environment:
-      - WEBUI_PORT=8080
-      - TORRENTING_PORT=6881
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /docker/appdata/qbittorrent:/config
-      - /data:/data
-    networks:
-      - arr_network
 
 ###############################################
 # PLEX
@@ -146,18 +143,19 @@ services:
     <<: *common-keys
     container_name: plex
     image: ghcr.io/hotio/plex:latest
+    network_mode: host
     ports:
       - 32400:32400
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/plex:/config
       - /data/media:/data/media:ro
-    networks:
-      - arr_network
+    environment:
+      - PLEX_CLAIM=claim-yUemDTMfdXkcf7B3xJt
 
 ###############################################
 # NETWORK
 ###############################################
 networks:
-  arr_network:
+  default:
     name: arr_network

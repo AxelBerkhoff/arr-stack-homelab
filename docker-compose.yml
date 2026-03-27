@@ -12,7 +12,6 @@ x-common-keys: &common-keys
   dns:
     - 1.1.1.1
     - 1.0.0.1
-
 x-common-keys-vpn: &common-keys-vpn
   restart: unless-stopped
   logging:
@@ -21,9 +20,7 @@ x-common-keys-vpn: &common-keys-vpn
     PUID: 1000
     PGID: 1000
     TZ: Europe/Amsterdam
-
 services:
-
 ###############################################
 # VPN (Gluetun)
 ###############################################
@@ -45,7 +42,6 @@ services:
       - 8080:8080   # qBittorrent WebUI
       - 6881:6881   # qBittorrent torrent
       - 6881:6881/udp
-
 ###############################################
 # QBITTORRENT (via VPN)
 ###############################################
@@ -66,7 +62,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/qbittorrent:/config
       - /data:/data
-
 ###############################################
 # RADARR
 ###############################################
@@ -80,7 +75,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/radarr:/config
       - /data:/data
-
 ###############################################
 # SONARR
 ###############################################
@@ -94,7 +88,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/sonarr:/config
       - /data:/data
-
 ###############################################
 # LIDARR
 ###############################################
@@ -108,7 +101,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/lidarr:/config
       - /data:/data
-
 ###############################################
 # BAZARR
 ###############################################
@@ -122,7 +114,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/bazarr:/config
       - /data/media:/data/media
-
 ###############################################
 # PROWLARR
 ###############################################
@@ -135,7 +126,6 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/prowlarr:/config
-
 ###############################################
 # PLEX
 ###############################################
@@ -150,7 +140,61 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /docker/appdata/plex:/config
       - /data/media:/data/media:ro
-
+###############################################
+# SEERR (voorheen Jellyseerr/Overseerr)
+# Request interface voor Plex en Jellyfin
+###############################################
+  seerr:
+    <<: *common-keys
+    container_name: seerr
+    image: ghcr.io/hotio/seerr:latest
+    ports:
+      - 5055:5055
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/seerr:/config
+###############################################
+# PROFILARR
+# Kwaliteitsprofielen beheren voor Radarr/Sonarr
+###############################################
+  profilarr:
+    <<: *common-keys
+    container_name: profilarr
+    image: santiagosayshey/profilarr:latest
+    ports:
+      - 6868:6868
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/profilarr:/config
+###############################################
+# TDARR
+# Automatische transcoding van mediabestanden
+###############################################
+  tdarr:
+    <<: *common-keys
+    container_name: tdarr
+    image: ghcr.io/haveagitgat/tdarr:latest
+    ports:
+      - 8265:8265   # Tdarr WebUI
+      - 8266:8266   # Tdarr Server
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Amsterdam
+      serverIP: 0.0.0.0
+      serverPort: 8266
+      webUIPort: 8265
+      internalNode: true
+      inContainer: true
+      ffmpegVersion: 6
+      nodeName: MainNode
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/tdarr/server:/app/server
+      - /docker/appdata/tdarr/configs:/app/configs
+      - /docker/appdata/tdarr/logs:/app/logs
+      - /data/media:/data/media
+      - /transcode_cache:/temp   # tijdelijke transcodeermap
 ###############################################
 # NETWORK
 ###############################################

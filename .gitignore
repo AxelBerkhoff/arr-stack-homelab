@@ -1,0 +1,21 @@
+# Lokale omgevingsvariabelen en gevoelige configuratie
+.env
+.env.*
+secrets.*
+
+# Docker gerelateerd
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# OS bestanden
+.DS_Store
+Thumbs.db
+
+# Editor bestanden
+.vscode/
+.idea/
+*.swp
+*.swo

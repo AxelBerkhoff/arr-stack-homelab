@@ -1,4 +1,4 @@
-# ARR Stack Homelab Setup
+# ARR Stack Homelab Setup met VPN
 
 > **Gebaseerd op het werk van [automation-avenue](https://github.com/automation-avenue/arr-new) — New ARR Stack 2026**
 > Met dank aan hun docker-compose configuratie en uitgebreide documentatie.

@@ -104,10 +104,18 @@ sudo docker compose up -d
 
 Na het opstarten moeten de interne instellingen van elke applicatie op elkaar worden afgestemd:
 
-- **Radarr**: Rootmap instellen op `/data/media/movies`
-- **Sonarr**: Rootmap instellen op `/data/media/tv`
-- **Lidarr**: Rootmap instellen op `/data/media/music`
-- **qBittorrent**: Downloadpad instellen op `/data/torrents`
+| Service | Poort | Functie |
+|---------|-------|---------|
+| qBittorrent | `8080` | Torrent download client |
+| Prowlarr | `9696` | Indexer beheer |
+| Radarr | `7878` | Films automatisering |
+| Sonarr | `8989` | Series automatisering |
+| Lidarr | `8686` | Muziek automatisering |
+| Bazarr | `6767` | Ondertitels |
+| Plex | `32400` | Media afspelen |
+| Seerr | `5055` | Media requests |
+| Profilarr | `6868` | Kwaliteitsprofielen |
+| Tdarr | `8265` | Automatisch transcoden |
 
 Omdat alle paden onder dezelfde mount (`/data`) vallen, behandelt het OS ze als één bestandssysteem. Dit maakt instant hardlinks (ook wel atomic moves) mogelijk.
 
@@ -248,6 +256,71 @@ Open: `http://<host-ip>:6767`
 - **Settings → Languages**: maak een taalprofiel aan (bijv. "English" of "Any")
 - **Settings → Providers**: voeg ondertitelbronnen toe zoals OpenSubtitles.org (gratis account vereist)
 - Ga na het koppelen van Radarr/Sonarr naar het **Series** of **Movies** tabblad en klik **Update** om je bibliotheek te synchroniseren
+
+---
+
+### Seerr
+
+Open: `http://<host-ip>:5055`
+
+Seerr is de opvolger van Jellyseerr en Overseerr en biedt een nette interface waarmee vrienden en familie zelf media kunnen aanvragen — zonder toegang tot Radarr of Sonarr.
+
+1. Maak een beheerdersaccount aan bij het eerste opstarten
+2. Ga naar **Settings → Plex** en koppel je Plex-account, of kies **Jellyfin** als je die gebruikt
+3. Ga naar **Settings → Radarr** en voeg Radarr toe:
+   - **Host**: `radarr`
+   - **Port**: `7878`
+   - **API Key**: kopieer uit Radarr → Settings → General
+   - Selecteer je gewenste kwaliteitsprofiel en rootmap
+4. Herhaal stap 3 voor **Settings → Sonarr** met host `sonarr` en poort `8989`
+
+Gebruikers kunnen nu via Seerr films en series aanvragen die automatisch worden opgepakt door Radarr en Sonarr.
+
+---
+
+### Profilarr
+
+Open: `http://<host-ip>:6868`
+
+Profilarr synchroniseert automatisch kwaliteitsprofielen en aangepaste formaten naar Radarr en Sonarr op basis van de TRaSH Guides.
+
+1. Ga naar **Settings → Radarr** en voeg Radarr toe:
+   - **Host**: `http://radarr:7878`
+   - **API Key**: kopieer uit Radarr → Settings → General
+2. Herhaal voor **Settings → Sonarr** met `http://sonarr:8989`
+3. Ga naar **Config** en kies welke TRaSH-profielen je wil synchroniseren
+4. Klik op **Sync** om de profielen direct toe te passen
+
+> ⚠️ Profilarr overschrijft bestaande kwaliteitsprofielen. Maak eerst een backup via **Settings → Backup** in Radarr/Sonarr als je bestaande profielen wil bewaren.
+
+---
+
+### Tdarr
+
+Open: `http://<host-ip>:8265`
+
+Tdarr transcodeert automatisch je mediabestanden naar efficiëntere formaten (bijv. H.265/HEVC) om schijfruimte te besparen.
+
+Maak eerst de tijdelijke transcodeermap aan op je host:
+
+```bash
+sudo mkdir -p /transcode_cache
+sudo chown -R 1000:1000 /transcode_cache
+```
+
+Configuratie in de webinterface:
+
+1. Ga naar **Libraries → +** en voeg je mediamap toe:
+   - **Source**: `/data/media/movies` (voeg ook `/data/media/tv` toe als aparte library)
+   - **Transcode cache**: `/temp`
+2. Ga naar **Transcode options** en kies je gewenste codec:
+   - `hevc_nvenc` — NVIDIA GPU
+   - `hevc_vaapi` — Intel/AMD GPU
+   - `libx265` — CPU (zwaar, maar werkt altijd)
+3. Stel een **Health Check** in om beschadigde bestanden op te sporen
+4. Zet de library op **Enabled** om te starten
+
+> ⚠️ CPU-transcoding (`libx265`) is zwaar. Start met een kleine testmap voordat je je volledige bibliotheek laat transcoden.
 
 ---
 

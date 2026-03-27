@@ -1,7 +1,12 @@
-# ARR Stack Homelab Setup met VPN
+# ARR Stack Homelab Setup
 
 > **Gebaseerd op het werk van [automation-avenue](https://github.com/automation-avenue/arr-new) — New ARR Stack 2026**
 > Met dank aan hun docker-compose configuratie en uitgebreide documentatie.
+
+---
+
+> ⚠️ **Disclaimer**
+> Deze handleiding is uitsluitend bedoeld voor informatieve doeleinden. Het downloaden van auteursrechtelijk beschermd materiaal zonder toestemming van de rechthebbende is in veel landen **illegaal**. De auteur is niet verantwoordelijk voor enig misbruik van de hier beschreven software of technieken. Zorg ervoor dat je altijd de wet- en regelgeving in jouw land naleeft en gebruik deze tools alleen voor legale doeleinden.
 
 ---
 
@@ -261,6 +266,9 @@ sudo docker compose up -d
 
 ## Indexers toevoegen
 
+> ⚠️ **Belangrijk: gebruik alleen legale indexers**
+> Het gebruik van indexers voor het downloaden van auteursrechtelijk beschermd materiaal is in veel landen strafbaar en kan leiden tot juridische consequenties. Informeer jezelf altijd over de wetgeving in jouw land voordat je indexers toevoegt. De auteur van deze handleiding draagt geen verantwoordelijkheid voor hoe je deze tools gebruikt.
+
 Nu kun je indexers toevoegen via Prowlarr. Zoek online naar legale indexers zoals:
 
 - **The Internet Archive (archive.org)** — duizenden publieksdomeinefilms en -series
@@ -270,7 +278,13 @@ Nu kun je indexers toevoegen via Prowlarr. Zoek online naar legale indexers zoal
 
 ---
 
-## Jellyfin
+## Media Players
+
+Voor het afspelen van je mediabibliotheek kun je kiezen tussen **Jellyfin** (volledig gratis en open-source) of **Plex** (gratis met optionele betaalde Plex Pass). Beide werken uitstekend met de ARR-stack.
+
+---
+
+### Jellyfin
 
 Open: `http://<host-ip>:8096`
 
@@ -280,7 +294,55 @@ Maak een gebruikersaccount aan en voeg mediabibliotheken toe:
 - **TV Shows**: koppel aan `/data/media/tv`
 - **Music**: koppel aan `/data/media/music`
 
+Voeg Jellyfin toe aan je `docker-compose.yml`:
+
+```yaml
+  jellyfin:
+    <<: *common-keys
+    container_name: jellyfin
+    image: ghcr.io/hotio/jellyfin:latest
+    ports:
+      - 8096:8096
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/jellyfin:/config
+      - /data/media:/data/media
+```
+
+> **Voordelen Jellyfin**: volledig gratis, geen account vereist, geen limieten, open-source en zelf gehost.
+
 ---
+
+### Plex
+
+Open: `http://<host-ip>:32400/web`
+
+Plex vereist een gratis Plex-account op [plex.tv](https://www.plex.tv). Haal eerst een **claim token** op via `https://www.plex.tv/claim` — dit token is 4 minuten geldig en koppelt de server aan jouw account.
+
+Voeg Plex toe aan je `docker-compose.yml`:
+
+```yaml
+  plex:
+    <<: *common-keys
+    container_name: plex
+    image: ghcr.io/hotio/plex:latest
+    ports:
+      - 32400:32400
+    environment:
+      - PLEX_CLAIM=claim-xxxxxxxxxxxxxxxxxxxx  # vervang door jouw token van plex.tv/claim
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/plex:/config
+      - /data/media:/data/media
+```
+
+Na het opstarten log je in via de webinterface en voeg je mediabibliotheken toe:
+
+- **Movies**: koppel aan `/data/media/movies`
+- **TV Shows**: koppel aan `/data/media/tv`
+- **Music**: koppel aan `/data/media/music`
+
+> **Voordelen Plex**: uitgebreide apps voor vrijwel elk platform, sterk ecosystem en goede remote access. Sommige functies (zoals offline downloads en geavanceerde audioprofielen) vereisen een betaalde **Plex Pass**.
 
 ## Probleemoplossing
 
@@ -347,6 +409,19 @@ jellyfin:
     devices:
       - /dev/dri:/dev/dri
 ```
+
+### Plex hardwareversnelling
+
+Voor Plex werkt hardwareversnelling op dezelfde manier. Voeg dit toe aan de Plex-service in `docker-compose.yml`:
+
+```yaml
+plex:
+    <<: *common-keys
+    devices:
+      - /dev/dri:/dev/dri
+```
+
+> Let op: hardwaretranscodering in Plex vereist een actieve **Plex Pass**.
 
 ### SABnzbd (Usenet-client)
 
